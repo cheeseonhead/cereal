@@ -21,6 +21,21 @@ struct LiveUI @0xc08240f996aefced {
   awarenessStatus @3 :Float32;
 }
 
+struct UiLayoutState @0x88dcce08ad29dda0 {
+  activeApp @0 :App;
+  sidebarCollapsed @1 :Bool;
+  mapEnabled @2 :Bool;
+  mockEngaged @3 :Bool;
+
+  enum App @0x9917470acf94d285 {
+    home @0;
+    music @1;
+    nav @2;
+    settings @3;
+    none @4;
+  }
+}
+
 struct OrbslamCorrection @0x8afd33dc9b35e1aa {
   correctionMonoTime @0 :UInt64;
   prePositionECEF @1 :List(Float64);
@@ -197,6 +212,72 @@ struct UiNavigationEvent @0x90c8426c3eaddd3b {
     passive @1;
     approaching @2;
     active @3;
+  }
+}
+
+struct LiveLocationData @0xb99b2bc7a57e8128 {
+  status @0 :UInt8;
+
+  # 3D fix
+  lat @1 :Float64;
+  lon @2 :Float64;
+  alt @3 :Float32;     # m
+
+  # speed
+  speed @4 :Float32;   # m/s
+
+  # NED velocity components
+  vNED @5 :List(Float32);
+
+  # roll, pitch, heading (x,y,z)
+  roll @6 :Float32;     # WRT to center of earth?
+  pitch @7 :Float32;    # WRT to center of earth?
+  heading @8 :Float32;  # WRT to north?
+
+  # what are these?
+  wanderAngle @9 :Float32;
+  trackAngle @10 :Float32;
+
+  # car frame -- https://upload.wikimedia.org/wikipedia/commons/f/f5/RPY_angles_of_cars.png
+
+  # gyro, in car frame, deg/s
+  gyro @11 :List(Float32);
+
+  # accel, in car frame, m/s^2
+  accel @12 :List(Float32);
+
+  accuracy @13 :Accuracy;
+
+  source @14 :SensorSource;
+  # if we are fixing a location in the past
+  fixMonoTime @15 :UInt64;
+
+  gpsWeek @16 :Int32;
+  timeOfWeek @17 :Float64;
+
+  positionECEF @18 :List(Float64);
+  poseQuatECEF @19 :List(Float32);
+  pitchCalibration @20 :Float32;
+  yawCalibration @21 :Float32;
+  imuFrame @22 :List(Float32);
+
+  struct Accuracy @0x943dc4625473b03f {
+    pNEDError @0 :List(Float32);
+    vNEDError @1 :List(Float32);
+    rollError @2 :Float32;
+    pitchError @3 :Float32;
+    headingError @4 :Float32;
+    ellipsoidSemiMajorError @5 :Float32;
+    ellipsoidSemiMinorError @6 :Float32;
+    ellipsoidOrientationError @7 :Float32;
+  }
+
+  enum SensorSource @0xc871d3cc252af657 {
+    applanix @0;
+    kalman @1;
+    orbslam @2;
+    timing @3;
+    dummy @4;
   }
 }
 

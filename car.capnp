@@ -52,8 +52,8 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     manualRestart @30;
     lowSpeedLockout @31;
     plannerError @32;
-    debugAlert @34;
-    steerTempUnavailableMute @35;
+    joystickDebug @34;
+    steerTempUnavailableUserOverride @35;
     resumeRequired @36;
     preDriverDistracted @37;
     promptDriverDistracted @38;
@@ -64,7 +64,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     belowSteerSpeed @46;
     lowBattery @48;
     vehicleModelInvalid @50;
-    controlsFailed @51;
+    accFaulted @51;
     sensorDataInvalid @52;
     commIssue @53;
     tooDistracted @54;
@@ -91,6 +91,8 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     startupNoCar @76;
     startupNoControl @77;
     startupMaster @78;
+    startupFuzzyFingerprint @97;
+    startupNoFw @104;
     fcw @79;
     steerSaturated @80;
     belowEngageSpeed @84;
@@ -101,8 +103,14 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     fanMalfunction @91;
     cameraMalfunction @92;
     gpsMalfunction @94;
-    startupOneplus @82;
     processNotRunning @95;
+    dashcamMode @96;
+    controlsInitializing @98;
+    usbError @99;
+    roadCameraError @100;
+    driverCameraError @101;
+    wideRoadCameraError @102;
+    localizerMalfunction @103;
 
     radarCanErrorDEPRECATED @15;
     radarCommIssueDEPRECATED @67;
@@ -122,6 +130,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     focusRecoverActiveDEPRECATED @86;
     neosUpdateRequiredDEPRECATED @88;
     modelLagWarningDEPRECATED @93;
+    startupOneplusDEPRECATED @82;
   }
 }
 
@@ -146,11 +155,10 @@ struct CarState {
   # brake pedal, 0.0-1.0
   brake @5 :Float32;      # this is user pedal only
   brakePressed @6 :Bool;  # this is user pedal only
-  brakeLights @19 :Bool;
 
   # steering wheel
-  steeringAngle @7 :Float32;       # deg
-  steeringRate @15 :Float32;       # deg/s
+  steeringAngleDeg @7 :Float32;
+  steeringRateDeg @15 :Float32;
   steeringTorque @8 :Float32;      # TODO: standardize units
   steeringTorqueEps @27 :Float32;  # TODO: standardize units
   steeringPressed @9 :Bool;        # if the user is using the steering wheel
@@ -240,6 +248,7 @@ struct CarState {
   }
 
   errorsDEPRECATED @0 :List(CarEvent.EventName);
+  brakeLightsDEPRECATED @19 :Bool;
 }
 
 # ******* radar state @ 20hz *******
@@ -294,7 +303,7 @@ struct CarControl {
     brake @1: Float32;
     # range from -1.0 - 1.0
     steer @2: Float32;
-    steerAngle @3: Float32;
+    steeringAngleDeg @3: Float32;
   }
 
   struct CruiseControl {
@@ -352,16 +361,19 @@ struct CarControl {
 struct CarParams {
   carName @0 :Text;
   carFingerprint @1 :Text;
+  fuzzyFingerprint @55 :Bool;
 
   enableGasInterceptor @2 :Bool;
   enableCruise @3 :Bool;
   enableCamera @4 :Bool;
   enableDsu @5 :Bool; # driving support unit
   enableApgs @6 :Bool; # advanced parking guidance system
+  enableBsm @56 :Bool; # blind spot monitoring
+  hasStockCamera @57 :Bool; # factory LKAS/LDW camera is present
 
   minEnableSpeed @7 :Float32;
   minSteerSpeed @8 :Float32;
-  maxSteerAngle @54 :Float32;
+  maxSteeringAngleDeg @54 :Float32;
   safetyModel @9 :SafetyModel;
   safetyModelPassive @42 :SafetyModel = silent;
   safetyParam @10 :Int16;
@@ -374,11 +386,11 @@ struct CarParams {
   brakeMaxV @16 :List(Float32);
 
   # things about the car in the manual
-  mass @17 :Float32;             # [kg] running weight
-  wheelbase @18 :Float32;        # [m] distance from rear to front axle
-  centerToFront @19 :Float32;   # [m] GC distance to front axle
-  steerRatio @20 :Float32;       # [] ratio between front wheels and steering wheel angles
-  steerRatioRear @21 :Float32;  # [] rear steering ratio wrt front steering (usually 0)
+  mass @17 :Float32;            # [kg] curb weight: all fluids no cargo
+  wheelbase @18 :Float32;       # [m] distance from rear axle to front axle
+  centerToFront @19 :Float32;   # [m] distance from center of mass to front axle
+  steerRatio @20 :Float32;      # [] ratio of steering wheel angle to front wheel angle
+  steerRatioRear @21 :Float32;  # [] ratio of steering wheel angle to rear wheel angle (usually 0)
 
   # things we can derive
   rotationalInertia @22 :Float32;    # [kg*m2] body rotational inertia
@@ -413,6 +425,7 @@ struct CarParams {
   dashcamOnly @41: Bool;
   transmissionType @43 :TransmissionType;
   carFw @44 :List(CarFw);
+
   radarTimeStep @45: Float32 = 0.05;  # time delta between radar updates, 20Hz is very standard
   communityFeature @46: Bool;  # true if a community maintained feature is detected
   fingerprintSource @49: FingerprintSource;
@@ -508,6 +521,7 @@ struct CarParams {
     automatic @1;  # Traditional auto, including DSG
     manual @2;  # True "stick shift" only
     direct @3;  # Electric vehicle or other direct drive
+    cvt @4;
   }
 
   struct CarFw {

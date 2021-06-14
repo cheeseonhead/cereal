@@ -5,7 +5,7 @@
 #include <atomic>
 
 #define DEFAULT_SEGMENT_SIZE (10 * 1024 * 1024)
-#define NUM_READERS 8
+#define NUM_READERS 10
 #define ALIGN(n) ((n + (8 - 1)) & -8)
 
 #define UNPACK64(higher, lower, input) do {uint64_t tmp = input; higher = tmp >> 32; lower = tmp & 0xFFFFFFFF;} while (0)
@@ -64,3 +64,5 @@ int msgq_msg_send(msgq_msg_t *msg, msgq_queue_t *q);
 int msgq_msg_recv(msgq_msg_t *msg, msgq_queue_t *q);
 int msgq_msg_ready(msgq_queue_t * q);
 int msgq_poll(msgq_pollitem_t * items, size_t nitems, int timeout);
+
+bool msgq_all_readers_updated(msgq_queue_t *q);
